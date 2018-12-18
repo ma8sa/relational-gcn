@@ -27,8 +27,8 @@ NUM_GC_LAYERS = 2  # Number of graph convolutional layers
 A, X, y, labeled_nodes_idx, train_idx, test_idx, rel_dict, train_names, test_names = load_data(
     DATASET)
 
-rel_list = range(len(A))
-for key, value in rel_dict.iteritems():
+rel_list = list(range(len(A)))
+for key, value in rel_dict.items():
     if value * 2 >= len(A):
         continue
     rel_list[value * 2] = key
@@ -48,7 +48,7 @@ t = time.time()
 bfs_generator = bfs_relational(A, labeled_nodes_idx)
 lvls = list()
 lvls.append(set(labeled_nodes_idx))
-lvls.append(set.union(*bfs_generator.next()))
+lvls.append(set.union(*bfs_generator.__next__()))
 print("Done! Elapsed time " + str(time.time() - t))
 
 # Delete unnecessary rows in adjacencies for memory efficiency

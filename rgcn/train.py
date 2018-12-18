@@ -58,6 +58,9 @@ with open(dirname + '/' + DATASET + '.pickle', 'rb') as f:
     data = pkl.load(f)
 
 A = data['A']
+
+print(A)
+input()
 y = data['y']
 train_idx = data['train_idx']
 test_idx = data['test_idx']
@@ -95,6 +98,7 @@ Y = GraphConvolution(y_train.shape[1], support, num_bases=BASES,
                      activation='softmax')([H] + A_in)
 
 # Compile model
+
 model = Model(input=[X_in] + A_in, output=Y)
 model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=LR))
 

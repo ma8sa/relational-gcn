@@ -287,7 +287,7 @@ def load_data(dataset_str='aifb', limit=-1):
                 print('%d adjacency matrices loaded ' % i)
 
         nodes_u_dict = {np.unicode(to_unicode(key)): val for key, val in
-                        nodes_dict.iteritems()}
+                        nodes_dict.items()}
 
         labels_set = set(labels_df[label_header].values.tolist())
         labels_dict = {lab: i for i, lab in enumerate(list(labels_set))}
@@ -357,7 +357,7 @@ def parse(symbol):
 
 
 def to_unicode(input):
-    if isinstance(input, unicode):
+    if isinstance(input, str):
         return input
     elif isinstance(input, str):
         return input.decode('utf-8', errors='replace')

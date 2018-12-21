@@ -76,6 +76,10 @@ class RDFReader:
 
 def load_sparse_csr(filename):
     loader = np.load(filename)
+    
+    print(loader['data'].shape)
+    print(" loader ")
+    input()
     return sp.csr_matrix((loader['data'], loader['indices'], loader['indptr']),
                          shape=loader['shape'], dtype=np.float32)
 
@@ -97,6 +101,7 @@ def load_data(dataset_str='aifb', limit=-1):
     """
 
     print('Loading dataset', dataset_str)
+    input()
 
     dirname = os.path.dirname(os.path.realpath(sys.argv[0]))
 
@@ -195,10 +200,12 @@ def load_data(dataset_str='aifb', limit=-1):
 
         adjacencies = [load_sparse_csr(file) for file in adj_files]
         adj_shape = adjacencies[0].shape
-
+        for a in adjacencies:
+             print(a.todense().shape)
+        input()
         print('Number of nodes: ', adj_shape[0])
         print('Number of relations: ', len(adjacencies))
-
+        input()
         labels = load_sparse_csr(labels_file)
         labeled_nodes_idx = list(labels.nonzero()[0])
 
@@ -311,7 +318,7 @@ def load_data(dataset_str='aifb', limit=-1):
                 train_idx.append(nodes_u_dict[nod])
                 train_names.append(nod)
             else:
-                print(u'Node not in dictionary, skipped: ',
+                print('Node not in dictionary, skipped: ',
                       nod.encode('utf-8', errors='replace'))
 
         print('Loading test set')

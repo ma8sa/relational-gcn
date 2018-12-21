@@ -41,6 +41,7 @@ A.append(sp.identity(A[0].shape[0]).tocsr())  # add identity matrix
 support = len(A)
 
 print("Relations used and their frequencies" + str([a.sum() for a in A]))
+input()
 
 print("Calculating level sets...")
 t = time.time()

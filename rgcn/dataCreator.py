@@ -8,12 +8,13 @@ import scipy.sparse as sp
 
 
 no_of_graphs = int(input(" no. pf graphs "))
+start = int(input(" starting point of graphs "))
 #total_type_edges = int(input(" type of edges \n"))
 total_type_edges = 4
 data_folder = "./data/custom/"
 
 
-for graph_num in range(no_of_graphs):
+for graph_num in range(start,no_of_graphs):
     print("--------------------------------------")
     num_nodes = int(input(" no. of nodes \n"))
     A = [np.zeros((num_nodes,num_nodes)) for _ in range(total_type_edges)]

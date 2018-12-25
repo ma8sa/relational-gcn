@@ -1,61 +1,63 @@
 import numpy as np
 import keras
+from keras.utils import np_utils
 import pickle as pkl
 
 
-class DataGenerator(keras.utils.Sequence):
+class DataGenerator():
     'Generates data for Keras'
-    def __init__(self, list_IDs, labels, batch_size=32, dim=(32,32,32), n_channels=1,
-                 n_classes=10, shuffle=True):
+    def __init__(self, list_IDs=None, 
+                 n_classes=2, shuffle=True):
         'Initialization'
-        self.dim = dim
-        self.batch_size = batch_size
-        self.labels = labels
-        self.list_IDs = list_IDs
-        self.n_channels = n_channels
+        #self.dim = dim
+        #self.batch_size = batch_size
+        #self.labels = labels
+        #self.list_IDs = list_IDs
+        #self.n_channels = n_channels
         self.n_classes = n_classes
         self.shuffle = shuffle
         self.on_epoch_end()
+        print("aassd")
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.list_IDs) / self.batch_size))
+        #return int(len(self.list_IDs) )
+        return int(3)
 
     def __getitem__(self, index):
         'Generate one batch of data'
         # Generate indexes of the batch
-        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
-
         # Find list of IDs
-        list_IDs_temp = [self.list_IDs[k] for k in indexes]
-
         # Generate data
-        X, y = self.__data_generation(list_IDs_temp)
+        print(" YOOOOOOO ")
+        X, y = self.__data_generation(index)
 
         return X, y
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
-        self.indexes = np.arange(len(self.list_IDs))
+        self.indexes = np.arange(3)
+        #self.indexes = np.arange(len(self.list_IDs))
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
 
-    def __data_generation(self, list_IDs_temp):
+    def __data_generation(self, ID):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
         # Initialization
 
         # Generate data
         # Change to reading your data
-        for i, ID in enumerate(list_IDs_temp):
-            # Store sample
-            X[i,] = np.load('data/' + ID + '.npy')
-
-            # Store class
-            y[i] = self.labels[ID]
         # LOAD A from pickle from IDA
-        A = pkl.load()
-        X = pkl.load()
-        Y = pkl.load()
+        A = pkl.load(open("A" + str(ID).zfill(4) + ".pkl","rb"))
+        print(A.todense().shape)
+        print(" fuck yeah ")
+        input()
+        y = pkl.load(open("labels" + str(ID).zfill(4) + ".pkl","rb"))
+        y = sp.csr_matrix(np_utils.to_categorical(y, 2))
+        
+        X = pkl.load(open("X" + str(ID).zfill(4) + ".pkl","rb")).todense()
+        X = sp.csr_matrix(np_utils.to_categorical(X, 4))
+        
         # LOAD X from ID
         # LOAD Y 
         for i in range(len(A)):
@@ -66,4 +68,4 @@ class DataGenerator(keras.utils.Sequence):
                     A[i] = D_inv.dot(A[i]).tocsr()
 
 
-        return [X]+A, keras.utils.to_categorical(y, num_classes=self.n_classes)
+        return [X]+A, y 

@@ -1,11 +1,13 @@
 from __future__ import print_function
 
-from keras.layers import Input, Dropout
+from keras.layers import Input, Dropout, Embedding, Reshape
 from keras.models import Model
 from keras.optimizers import Adam
 from keras.regularizers import l2
 #import keras
 from keras.utils import np_utils
+
+import keras.backend as K
 
 from rgcn.layers.graph import GraphConvolution
 from rgcn.layers.input_adj import InputAdj
@@ -21,6 +23,9 @@ import argparse
 import numpy as np
 import scipy.sparse as sp
 
+from dataLoader import DataGenerator
+
+from keras.models import Sequential
 np.random.seed()
 
 ap = argparse.ArgumentParser()
@@ -104,13 +109,13 @@ support = len(A)
 
 # TODO experiment with features
 X = sp.csr_matrix(A[0].shape)
-print(X.shape[1])
-input()
-#print(X.todense().shape)
-print( y.todense() )
-input()
-#X = pkl.load(open("X0000.pkl","rb"))
+X = sp.csr_matrix(np.ones((A[0].shape[0],10)))
 
+#print(X.todense().shape)
+X = pkl.load(open("X0000.pkl","rb")).todense()
+X = sp.csr_matrix(np_utils.to_categorical(X, 4))
+#Xshape = X.shape[1]
+#X = sp.csr_matrix( X.todense().T )
 # Normalize adjacency matrices individually
 for i in range(len(A)):
     d = np.array(A[i].sum(1)).flatten()
@@ -121,13 +126,19 @@ for i in range(len(A)):
 
 A_in = [InputAdj(sparse=True) for _ in range(support)]
 X_in = Input(shape=(X.shape[1],), sparse=True)
+#X_in = Embedding(4, 64, input_length=1)(X_i)
+#X_in = K.reshape(X_in,(None,64))
+#print(X_in.shape.eval())
+#input()
+#X_in = Reshape((64,), input_shape=(None,1,64))(X_in)
+#X_in = Input(shape=(64,), sparse=True)
 
 # Define model architecture
 H = GraphConvolution(HIDDEN, support, num_bases=BASES, featureless=False,
                      activation='relu',
                      W_regularizer=l2(L2))([X_in] + A_in)
 H = Dropout(DO)(H)
-Y = GraphConvolution(y_train.shape[1], support, num_bases=BASES,
+Y = GraphConvolution(y_train.shape[1], support, num_bases=BASES, 
                      activation='softmax')([H] + A_in)
 
 # Compile model
@@ -151,36 +162,73 @@ preds = None
 # we need to change how the netwrork works as , we have lots graphs to train from , we dont need splits 
 # We need to find where is the training hapeening
 # maybe we should go through some keras videos
-
+training_generator = DataGenerator()
 # Fit
 for epoch in range(1, NB_EPOCH + 1):
 
     # Log wall-clock time
-    t = time.time()
+    folder = "./data/custom/"
+    for I in range(10):
+        if I == 2:
+            continue
+        t = time.time()
+        A = pkl.load(open(folder + "A" + str(I).zfill(4) + ".pkl","rb"))
+        y = sp.csr_matrix(np.zeros((num_nodes,2))) 
+        y = pkl.load(open(folder + "labels" + str(I).zfill(4) + ".pkl","rb"))
+        X = pkl.load(open(folder + "X" + str(I).zfill(4) + ".pkl","rb")).todense()
+        X = sp.csr_matrix(np_utils.to_categorical(X, 4))
 
-    # Single training iteration
-    model.fit([X] + A, y_train, 
-              batch_size=num_nodes, nb_epoch=1, shuffle=False, verbose=0)
+        y = (np_utils.to_categorical(y, 2))
+        
+        num_nodes = A[0].shape[0]
+        
+        #y_train, y_val, y_test, idx_train, idx_val, idx_test = get_splits(y, train_idx,
+        #                                                          test_idx,
+        #                                                          False)
+        
+        for i in range(len(A)):
+            d = np.array(A[i].sum(1)).flatten()
+            d_inv = 1. / d
+            d_inv[np.isinf(d_inv)] = 0.
+            D_inv = sp.diags(d_inv)
+            A[i] = D_inv.dot(A[i]).tocsr()
+                
+        print(" Loading time #{:.4f} ".format( time.time() - t ))
+        t = time.time()
 
-    if epoch % 1 == 0:
+        # Single training iteration
+        print(" lables : {}".format(y.shape))
+        print(" A : {}".format(A[0].shape))
+        print(" fetures : {}".format(X.shape))
+        print(" training")
 
-        # Predict on full dataset
-        preds = model.predict([X] + A, batch_size=num_nodes)
+        #model.fit_generator(generator=training_generator,samples_per_epoch=3,nb_epoch=100)
+                            #use_multiprocessing=True,                  
+                            #workers=6)
+        model.fit([X] + A, y, 
+                  batch_size=num_nodes, nb_epoch=1, shuffle=False, verbose=0)
 
-        # Train / validation scores
-        train_val_loss, train_val_acc = evaluate_preds(preds, [y_train, y_val],
-                                                       [idx_train, idx_val])
+        if epoch % 1 == 0:
 
-        print("Epoch: {:04d}".format(epoch),
-              "train_loss= {:.4f}".format(train_val_loss[0]),
-              "train_acc= {:.4f}".format(train_val_acc[0]),
-              "val_loss= {:.4f}".format(train_val_loss[1]),
-              "val_acc= {:.4f}".format(train_val_acc[1]),
-              "time= {:.4f}".format(time.time() - t))
+            # Predict on full dataset
+            preds = model.predict([X] + A, batch_size=num_nodes)
+            print(preds)
+            # Train / validation scores
+            #train_val_loss, train_val_acc = evaluate_preds(preds, [y_train, y_val],
+            #                                               [idx_train, idx_val])
 
-    else:
-        print("Epoch: {:04d}".format(epoch),
-              "time= {:.4f}".format(time.time() - t))
+            train_val_loss,train_val_acc = evaluate_preds(preds, [y,y], [ np.arange(num_nodes), np.arange(num_nodes) ])
+                                                  
+            print("Epoch: {:04d}".format(epoch),
+                  "train_loss= {:.4f}".format(train_val_loss[0]),
+                  "train_acc= {:.4f}".format(train_val_acc[0]),
+                  "val_loss= {:.4f}".format(train_val_loss[1]),
+                  "val_acc= {:.4f}".format(train_val_acc[1]),
+                  "time= {:.4f}".format(time.time() - t))
+
+        else:
+            print("Epoch: {:04d}".format(epoch),
+                  "time= {:.4f}".format(time.time() - t))
 
 # Testing
 test_loss, test_acc = evaluate_preds(preds, [y_test], [idx_test])
